@@ -199,8 +199,14 @@ void DlssRRModule::setAttributes(int attributeCount, std::vector<std::string> &a
         const std::string &key = attributeKVs[2 * i];
         const std::string &value = attributeKVs[2 * i + 1];
 
-        if (key == "render_pipeline.module.dlss_rr.attribute.mode") {
-            if (value == "render_pipeline.module.dlss_rr.attribute.mode.performance") {
+        if (key == "render_pipeline.module.dlss_rr.attribute.model") {
+            preset_ = value == "render_pipeline.module.dlss_rr.attribute.model.d" ?
+                          NVSDK_NGX_RayReconstruction_Hint_Render_Preset_D :
+                          NVSDK_NGX_RayReconstruction_Hint_Render_Preset_E;
+        } else if (key == "render_pipeline.module.dlss_rr.attribute.mode") {
+            if (value == "render_pipeline.module.dlss_rr.attribute.mode.ultra_performance") {
+                mode_ = NVSDK_NGX_PerfQuality_Value_UltraPerformance;
+            } else if (value == "render_pipeline.module.dlss_rr.attribute.mode.performance") {
                 mode_ = NVSDK_NGX_PerfQuality_Value_MaxPerf;
             } else if (value == "render_pipeline.module.dlss_rr.attribute.mode.balanced") {
                 mode_ = NVSDK_NGX_PerfQuality_Value_Balanced;
@@ -222,6 +228,7 @@ void DlssRRModule::build() {
     dlssRRInitInfo.inputSize = {inputWidth_, inputHeight_};
     dlssRRInitInfo.outputSize = {outputWidth_, outputHeight_};
     dlssRRInitInfo.quality = mode_;
+    dlssRRInitInfo.preset = preset_;
     ngxContext_->initDlssRR(dlssRRInitInfo, framework->mainCommandPool(), dlss_);
 
     auto firstHitDepthShader =

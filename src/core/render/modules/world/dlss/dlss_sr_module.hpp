@@ -62,6 +62,7 @@ class DlssSRModule : public WorldModule, public SharedObject<DlssSRModule> {
 
     QualityMode qualityMode_ = QualityMode::Balanced;
     NVSDK_NGX_PerfQuality_Value ngxQualityMode_ = NVSDK_NGX_PerfQuality_Value_Balanced;
+    NVSDK_NGX_DLSS_Hint_Render_Preset preset_ = NVSDK_NGX_DLSS_Hint_Render_Preset_Default;
     NgxContext::SupportedSizes supportedSizes_{};
 
     uint32_t renderWidth_ = 0;

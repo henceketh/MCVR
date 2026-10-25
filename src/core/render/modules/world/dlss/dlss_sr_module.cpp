@@ -196,6 +196,20 @@ void DlssSRModule::setAttributes(int attributeCount, std::vector<std::string> &a
     for (int i = 0; i < attributeCount; ++i) {
         const std::string &key = attributeKVs[2 * i];
         const std::string &value = attributeKVs[2 * i + 1];
+        if (key == "render_pipeline.module.dlss_sr.attribute.model") {
+            if (value == "render_pipeline.module.dlss_sr.attribute.model.j") {
+                preset_ = NVSDK_NGX_DLSS_Hint_Render_Preset_J;
+            } else if (value == "render_pipeline.module.dlss_sr.attribute.model.k") {
+                preset_ = NVSDK_NGX_DLSS_Hint_Render_Preset_K;
+            } else if (value == "render_pipeline.module.dlss_sr.attribute.model.l") {
+                preset_ = NVSDK_NGX_DLSS_Hint_Render_Preset_L;
+            } else if (value == "render_pipeline.module.dlss_sr.attribute.model.m") {
+                preset_ = NVSDK_NGX_DLSS_Hint_Render_Preset_M;
+            } else {
+                preset_ = NVSDK_NGX_DLSS_Hint_Render_Preset_Default;
+            }
+            continue;
+        }
         if (key != "render_pipeline.module.dlss_sr.attribute.quality_mode") { continue; }
 
         QualityMode parsedMode = qualityMode_;
@@ -221,6 +235,7 @@ void DlssSRModule::build() {
     initInfo.inputSize = {renderWidth_, renderHeight_};
     initInfo.outputSize = {displayWidth_, displayHeight_};
     initInfo.quality = ngxQualityMode_;
+    initInfo.preset = preset_;
     initInfo.featureCreateFlags = NVSDK_NGX_DLSS_Feature_Flags_IsHDR | NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
 
     NVSDK_NGX_Result result = ngxContext_->initDlssSR(initInfo, framework->mainCommandPool(), dlss_);
