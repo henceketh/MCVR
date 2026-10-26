@@ -5,6 +5,7 @@
 #include "core/render/chunks.hpp"
 #include "core/render/render_framework.hpp"
 #include "core/render/renderer.hpp"
+#include "core/vulkan/result.hpp"
 #include "core/vulkan/vertex.hpp"
 
 #include <shaderc/shaderc.hpp>
@@ -2858,8 +2859,20 @@ void Entities::build() {
     auto physicalDevice = framework->physicalDevice();
     auto &frameResourceRetainer = framework->frameResourceRetainer();
     const uint32_t swapchainImageCount = framework->swapchain()->imageCount();
-    if (frameCapacityCaches_.size() < swapchainImageCount) { frameCapacityCaches_.resize(swapchainImageCount); }
-    auto &frameCache = frameCapacityCaches_[context->frameIndex];
+    // Entity motion vectors read last frame's vertices from the slot it was built in. Frame generation presents several
+    // swapchain images per frame, so the next frame can get the same image index; it then builds in the spare slot.
+    if (frameCapacityCaches_.size() < swapchainImageCount + 1) { frameCapacityCaches_.resize(swapchainImageCount + 1); }
+    const uint32_t frameCacheSlot =
+        context->frameIndex == lastFrameCacheSlot_ ? swapchainImageCount : context->frameIndex;
+    lastFrameCacheSlot_ = frameCacheSlot;
+    auto &frameCache = frameCapacityCaches_[frameCacheSlot];
+    // The spare slot may still be in use by another image's frame.
+    if (frameCache.ownerContext != context->frameIndex && frameCache.ownerContext < framework->contexts().size()) {
+        vk::waitForFence(device->vkDevice(),
+                         framework->contexts()[frameCache.ownerContext]->commandFinishedFence->vkFence(),
+                         "vkWaitForFences(entity frame cache)");
+    }
+    frameCache.ownerContext = context->frameIndex;
 
     struct EntityPlacement {
         uint32_t vertexOffset = 0;
@@ -3190,6 +3203,10 @@ void Entities::build() {
         }
 
         entity->lastQueuedFrame = currentFrameIndex_;
+        // History older than one frame points into a slot that has been rebuilt since.
+        if (entity->lastActiveFrame != currentFrameIndex_ && entity->lastActiveFrame + 1 != currentFrameIndex_) {
+            entity->hasSavedRenderState = false;
+        }
         if (entity->lastActiveFrame != currentFrameIndex_) {
             entity->lastActiveFrame = currentFrameIndex_;
             activeEntities.push_back(entity);

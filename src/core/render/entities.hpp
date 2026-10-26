@@ -342,8 +342,10 @@ class Entities : public SharedObject<Entities> {
         std::vector<std::vector<uint32_t>> blasGeometryKeys;
         std::vector<VkDeviceSize> blasOffsets;
         std::vector<VkDeviceSize> blasSizes;
+        uint32_t ownerContext = std::numeric_limits<uint32_t>::max();
     };
     std::vector<FrameCapacityCache> frameCapacityCaches_;
+    uint32_t lastFrameCacheSlot_ = std::numeric_limits<uint32_t>::max();
 
     std::shared_ptr<vk::BLASBatchBuilder> blasBatchBuilder_;
 };
